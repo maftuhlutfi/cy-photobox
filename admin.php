@@ -177,6 +177,29 @@ require_once __DIR__ . '/config.php';
             color: #fff;
         }
 
+        .btn-delete-all {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: #ffffff;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-delete-all:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(239, 68, 68, 0.6);
+            background: linear-gradient(135deg, #f87171, #dc2626);
+        }
+
         /* Section Title */
         .section-title {
             font-family: 'Outfit', sans-serif;
@@ -410,14 +433,18 @@ require_once __DIR__ . '/config.php';
     </div>
 
     <div class="stat-card" style="flex-direction: column; align-items: stretch; justify-content: center; gap: 10px;">
-        <div style="font-size: 13px; color: var(--text-dim); text-align: center;">Manajemen Statistik</div>
-        <button class="btn-reset" onclick="openResetModal()">🔄 Reset Stats</button>
+        <div style="font-size: 13px; color: var(--text-dim); text-align: center;">Manajemen Data & Reset</div>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn-reset" onclick="openResetModal()" style="flex: 1;">🔄 Reset Stats</button>
+            <button class="btn-delete-all" onclick="openDeleteAllModal()" style="flex: 1;">🗑️ Hapus Foto & Reset</button>
+        </div>
     </div>
 </div>
 
 <!-- Photos List Section -->
-<div class="section-title">
+<div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
     <span>🖼️ Daftar Foto Siap Cetak & Riwayat</span>
+    <button class="btn-delete-all" onclick="openDeleteAllModal()" style="font-size: 13px; padding: 8px 16px;">🗑️ Hapus Semua Foto & Reset</button>
 </div>
 
 <div class="photos-grid" id="photos-container">
@@ -426,14 +453,26 @@ require_once __DIR__ . '/config.php';
     </div>
 </div>
 
-<!-- Reset Confirmation Modal -->
+<!-- Reset Stats Confirmation Modal -->
 <div class="modal-overlay" id="reset-modal">
     <div class="modal-box">
         <div class="modal-title">Reset Statistik?</div>
         <div class="modal-desc">Apakah Anda yakin ingin mengembalikan hitungan Total Foto Diambil dan Total Foto Dicetak ke 0?</div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="closeResetModal()">Batal</button>
-            <button class="btn-confirm-reset" onclick="confirmResetStats()">Ya, Reset</button>
+            <button class="btn-confirm-reset" onclick="confirmResetStats()">Ya, Reset Stats</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete All Photos & Reset Confirmation Modal -->
+<div class="modal-overlay" id="delete-all-modal">
+    <div class="modal-box" style="border-color: rgba(239, 68, 68, 0.4);">
+        <div class="modal-title" style="color: #ef4444;">⚠️ Hapus Semua Foto & Reset?</div>
+        <div class="modal-desc">Tindakan ini akan <b>MENGHAPUS PERMANEN</b> seluruh file foto (raw & framed) di server, menghapus seluruh riwayat di database, dan me-reset statistik ke 0.</div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeDeleteAllModal()">Batal</button>
+            <button class="btn-confirm-reset" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="confirmDeleteAllPhotos()">Ya, Hapus Semua!</button>
         </div>
     </div>
 </div>
@@ -489,9 +528,14 @@ require_once __DIR__ . '/config.php';
                             <span class="status-badge ${badgeClass}">${badgeText}</span>
                         </div>
                         <div class="photo-time">Waktu: ${p.created_at}</div>
-                        <button class="btn-print-card" onclick="printPhoto(${p.id})">
-                            🖨️ Cetak 4R
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-print-card" style="flex: 1;" onclick="printPhoto(${p.id})">
+                                🖨️ Cetak 4R
+                            </button>
+                            <button class="btn-reset" style="width: auto; padding: 12px 14px; font-size: 13px;" onclick="deletePhoto(${p.id})" title="Hapus foto ini">
+                                🗑️
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -521,12 +565,38 @@ require_once __DIR__ . '/config.php';
         window.open(`print.php?id=${id}&autoprint=1`, '_blank', 'width=800,height=900');
     }
 
+    async function deletePhoto(id) {
+        if (!confirm('Apakah Anda yakin ingin menghapus foto ini?')) return;
+        try {
+            const res = await fetch('api.php?action=delete_photo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentPhotosJson = ''; // force re-render
+                fetchAdminData();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
     function openResetModal() {
         document.getElementById('reset-modal').classList.add('active');
     }
 
     function closeResetModal() {
         document.getElementById('reset-modal').classList.remove('active');
+    }
+
+    function openDeleteAllModal() {
+        document.getElementById('delete-all-modal').classList.add('active');
+    }
+
+    function closeDeleteAllModal() {
+        document.getElementById('delete-all-modal').classList.remove('active');
     }
 
     async function confirmResetStats() {
@@ -541,6 +611,26 @@ require_once __DIR__ . '/config.php';
             if (data.success) {
                 document.getElementById('stat-taken').textContent = 0;
                 document.getElementById('stat-printed').textContent = 0;
+                fetchAdminData();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function confirmDeleteAllPhotos() {
+        closeDeleteAllModal();
+        try {
+            const res = await fetch('api.php?action=delete_all_photos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('stat-taken').textContent = 0;
+                document.getElementById('stat-printed').textContent = 0;
+                currentPhotosJson = '';
                 fetchAdminData();
             }
         } catch (e) {

@@ -124,6 +124,75 @@ try {
         exit;
     }
 
+    if ($action === 'delete_all_photos') {
+        // Delete photo records from database
+        $db->exec("DELETE FROM photos");
+        try {
+            $db->exec("DELETE FROM sqlite_sequence WHERE name = 'photos'");
+        } catch (Exception $e) {}
+
+        // Reset stats
+        $db->exec("UPDATE stats SET total_taken = 0, total_printed = 0 WHERE id = 1");
+
+        // Helper function to remove files in directory
+        $emptyDir = function($dir) {
+            if (!is_dir($dir)) return;
+            $files = scandir($dir);
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..' || $file === '.gitignore') continue;
+                $filePath = $dir . '/' . $file;
+                if (is_file($filePath)) {
+                    @unlink($filePath);
+                }
+            }
+        };
+
+        $emptyDir(UPLOAD_RAW_DIR);
+        $emptyDir(UPLOAD_FRAMED_DIR);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Semua foto berhasil dihapus dan statistik di-reset.',
+            'stats' => [
+                'total_taken' => 0,
+                'total_printed' => 0
+            ]
+        ]);
+        exit;
+    }
+
+    if ($action === 'delete_photo') {
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $id = (int)($input['id'] ?? 0);
+
+        if ($id > 0) {
+            $stmt = $db->prepare("SELECT photo1, photo2, photo3, framed_image FROM photos WHERE id = ?");
+            $stmt->execute([$id]);
+            $photo = $stmt->fetch();
+
+            if ($photo) {
+                if (!empty($photo['framed_image'])) @unlink(UPLOAD_FRAMED_DIR . $photo['framed_image']);
+                if (!empty($photo['photo1'])) @unlink(UPLOAD_RAW_DIR . $photo['photo1']);
+                if (!empty($photo['photo2'])) @unlink(UPLOAD_RAW_DIR . $photo['photo2']);
+                if (!empty($photo['photo3'])) @unlink(UPLOAD_RAW_DIR . $photo['photo3']);
+
+                $delStmt = $db->prepare("DELETE FROM photos WHERE id = ?");
+                $delStmt->execute([$id]);
+            }
+        }
+
+        $stats = $db->query("SELECT total_taken, total_printed FROM stats WHERE id = 1")->fetch();
+
+        echo json_encode([
+            'success' => true,
+            'stats' => [
+                'total_taken' => (int)($stats['total_taken'] ?? 0),
+                'total_printed' => (int)($stats['total_printed'] ?? 0)
+            ]
+        ]);
+        exit;
+    }
+
     if ($action === 'list_frames') {
         $frameDir = __DIR__ . '/frame/';
         $frames = [];

@@ -98,6 +98,9 @@ require_once __DIR__ . '/config.php';
                         <button class="btn-retake" id="btn-retake" onclick="retakePhotos()">
                             🔄 Foto Ulang
                         </button>
+                        <button class="btn-reset-session" onclick="resetToStart()">
+                            🗑️ Hapus Foto & Reset Sesi
+                        </button>
                     </div>
                 </div>
             </div>

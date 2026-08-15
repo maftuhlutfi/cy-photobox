@@ -543,9 +543,11 @@ function resetToStart() {
     sessionTimeLeft = 180;
     updateSessionTimerUI();
 
+    if (countdownOverlay) countdownOverlay.style.display = 'none';
+
     capturedPhotos = [];
     thumbSlots.forEach((slot, idx) => {
-        slot.innerHTML = `Foto ${idx + 1}`;
+        if (slot) slot.innerHTML = `Foto ${idx + 1}`;
     });
 
     if (btnRetake) {

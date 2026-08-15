@@ -397,6 +397,29 @@ body {
     cursor: not-allowed;
 }
 
+.btn-reset-session {
+    padding: 14px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    font-weight: 700;
+    font-size: 15px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-reset-session:hover {
+    background: rgba(239, 68, 68, 0.3);
+    color: #ffffff;
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: translateY(-2px);
+}
+
 /* Screen 4: Ready to Print & QR Code */
 .ready-box {
     background: var(--card-bg);
